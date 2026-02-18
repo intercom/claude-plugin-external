@@ -8,22 +8,6 @@ Connect your Intercom workspace to Claude Code. Search conversations, analyze cu
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI installed
 - Your Intercom workspace must be US-hosted (EU and AU support coming soon)
 
-## Installation
-
-Install from the Claude plugin directory:
-
-```
-/install intercom@claude-plugin-directory
-```
-
-Or manually add the Intercom MCP server:
-
-```bash
-claude mcp add --transport http intercom https://mcp.intercom.com/mcp
-```
-
-When you first use the plugin, you'll be prompted to authenticate with your Intercom workspace via OAuth.
-
 ## Available Skills
 
 | Skill | Invocation | Description |

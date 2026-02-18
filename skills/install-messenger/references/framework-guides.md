@@ -1,10 +1,12 @@
 # Framework-Specific Messenger Installation Guides
 
-Detailed installation instructions for integrating the Intercom Messenger with popular frontend frameworks.
+Detailed installation instructions for integrating the Intercom Messenger with JWT-based identity verification in popular frontend frameworks.
+
+All examples assume a backend endpoint at `/api/intercom-jwt` that returns `{ "token": "<signed-jwt>" }` for the authenticated user. See the main SKILL.md for backend implementation examples.
 
 ## React via `@intercom/messenger-js-sdk`
 
-The official Intercom React SDK provides a clean, hook-based integration.
+The official Intercom React SDK provides a clean integration.
 
 ### Installation
 
@@ -14,39 +16,71 @@ npm install @intercom/messenger-js-sdk
 yarn add @intercom/messenger-js-sdk
 ```
 
-### Basic Setup
+### Secure Setup with JWT
 
-Initialize the Messenger in your app's root component or layout:
+Create a provider component that fetches the JWT and boots the Messenger:
 
 ```tsx
-import Intercom from '@intercom/messenger-js-sdk';
+// components/IntercomProvider.tsx
+import { useEffect } from 'react';
+import Intercom, { shutdown, update } from '@intercom/messenger-js-sdk';
+import { useLocation } from 'react-router-dom';
 
-function App() {
-  Intercom({
-    app_id: 'YOUR_WORKSPACE_ID',
-  });
+interface IntercomProviderProps {
+  appId: string;
+  isAuthenticated: boolean;
+  children: React.ReactNode;
+}
 
-  return <div>{/* Your app content */}</div>;
+export function IntercomProvider({ appId, isAuthenticated, children }: IntercomProviderProps) {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // Fetch JWT from backend and boot with identity verification
+      fetch('/api/intercom-jwt', { credentials: 'include' })
+        .then(res => res.json())
+        .then(({ token }) => {
+          Intercom({
+            app_id: appId,
+            intercom_user_jwt: token,
+          });
+        });
+    } else {
+      // Anonymous visitor — no JWT needed
+      Intercom({
+        app_id: appId,
+      });
+    }
+
+    return () => {
+      shutdown();
+    };
+  }, [appId, isAuthenticated]);
+
+  // Update Messenger on route changes
+  useEffect(() => {
+    update();
+  }, [location]);
+
+  return <>{children}</>;
 }
 ```
 
-### Identified Users
-
-Pass user attributes when the user is authenticated:
+Use in your app root:
 
 ```tsx
-import Intercom from '@intercom/messenger-js-sdk';
+// App.tsx
+import { IntercomProvider } from './components/IntercomProvider';
 
-function App({ user }) {
-  Intercom({
-    app_id: 'YOUR_WORKSPACE_ID',
-    user_id: user.id,
-    name: user.name,
-    email: user.email,
-    created_at: user.createdAt, // Unix timestamp
-  });
+function App() {
+  const { isAuthenticated } = useAuth(); // Your auth hook
 
-  return <div>{/* Your app content */}</div>;
+  return (
+    <IntercomProvider appId="YOUR_WORKSPACE_ID" isAuthenticated={isAuthenticated}>
+      {/* Your app content */}
+    </IntercomProvider>
+  );
 }
 ```
 
@@ -65,28 +99,6 @@ function LogoutButton() {
 }
 ```
 
-### Route Change Updates
-
-With React Router v6+:
-
-```tsx
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { update } from '@intercom/messenger-js-sdk';
-
-function IntercomRouteUpdater() {
-  const location = useLocation();
-
-  useEffect(() => {
-    update();
-  }, [location]);
-
-  return null;
-}
-
-// Add <IntercomRouteUpdater /> inside your <Router>
-```
-
 ---
 
 ## Next.js with `next/script`
@@ -95,7 +107,7 @@ For Next.js applications, use the `next/script` component for optimized script l
 
 ### App Router (Next.js 13+)
 
-Create a client component for the Messenger:
+Create a client component that fetches the JWT and boots the Messenger:
 
 ```tsx
 // components/IntercomMessenger.tsx
@@ -103,19 +115,38 @@ Create a client component for the Messenger:
 
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface IntercomMessengerProps {
   appId: string;
-  user?: {
-    name: string;
-    email: string;
-    createdAt: number;
-  };
+  isAuthenticated: boolean;
 }
 
-export function IntercomMessenger({ appId, user }: IntercomMessengerProps) {
+export function IntercomMessenger({ appId, isAuthenticated }: IntercomMessengerProps) {
   const pathname = usePathname();
+  const [ready, setReady] = useState(false);
+
+  // Boot Messenger with JWT once script is loaded
+  useEffect(() => {
+    if (!ready) return;
+
+    if (isAuthenticated) {
+      fetch('/api/intercom-jwt', { credentials: 'include' })
+        .then(res => res.json())
+        .then(({ token }) => {
+          window.Intercom('boot', {
+            api_base: 'https://api-iam.intercom.io',
+            app_id: appId,
+            intercom_user_jwt: token,
+          });
+        });
+    } else {
+      window.Intercom('boot', {
+        api_base: 'https://api-iam.intercom.io',
+        app_id: appId,
+      });
+    }
+  }, [ready, appId, isAuthenticated]);
 
   // Update Intercom on route changes
   useEffect(() => {
@@ -124,33 +155,13 @@ export function IntercomMessenger({ appId, user }: IntercomMessengerProps) {
     }
   }, [pathname]);
 
-  const intercomSettings = {
-    api_base: 'https://api-iam.intercom.io',
-    app_id: appId,
-    ...(user && {
-      name: user.name,
-      email: user.email,
-      created_at: user.createdAt,
-    }),
-  };
-
   return (
-    <>
-      <Script
-        id="intercom-settings"
-        strategy="lazyOnload"
-        dangerouslySetInnerHTML={{
-          __html: `window.intercomSettings = ${JSON.stringify(intercomSettings)};`,
-        }}
-      />
-      <Script
-        id="intercom-widget"
-        strategy="lazyOnload"
-        dangerouslySetInnerHTML={{
-          __html: `(function(){var w=window;var ic=w.Intercom;if(typeof ic==="function"){ic('reattach_activator');ic('update',w.intercomSettings);}else{var d=document;var i=function(){i.c(arguments);};i.q=[];i.c=function(args){i.q.push(args);};w.Intercom=i;var l=function(){var s=d.createElement('script');s.type='text/javascript';s.async=true;s.src='https://widget.intercom.io/widget/${appId}';var x=d.getElementsByTagName('script')[0];x.parentNode.insertBefore(s,x);};if(document.readyState==='complete'){l();}else{w.addEventListener('load',l,false);}}})();`,
-        }}
-      />
-    </>
+    <Script
+      id="intercom-widget"
+      strategy="lazyOnload"
+      src={`https://widget.intercom.io/widget/${appId}`}
+      onLoad={() => setReady(true)}
+    />
   );
 }
 ```
@@ -162,11 +173,13 @@ Add to your root layout:
 import { IntercomMessenger } from '@/components/IntercomMessenger';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = /* your auth check */;
+
   return (
     <html lang="en">
       <body>
         {children}
-        <IntercomMessenger appId="YOUR_WORKSPACE_ID" />
+        <IntercomMessenger appId="YOUR_WORKSPACE_ID" isAuthenticated={isAuthenticated} />
       </body>
     </html>
   );
@@ -181,11 +194,36 @@ For the Pages Router, add the Messenger in `_app.tsx`:
 // pages/_app.tsx
 import Script from 'next/script';
 import { useRouter } from 'next/router';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
+  const [ready, setReady] = useState(false);
+  const { user } = useAuth(); // Your auth hook
 
+  // Boot with JWT when script loads or auth changes
+  useEffect(() => {
+    if (!ready) return;
+
+    if (user) {
+      fetch('/api/intercom-jwt', { credentials: 'include' })
+        .then(res => res.json())
+        .then(({ token }) => {
+          window.Intercom('boot', {
+            api_base: 'https://api-iam.intercom.io',
+            app_id: 'YOUR_WORKSPACE_ID',
+            intercom_user_jwt: token,
+          });
+        });
+    } else {
+      window.Intercom('boot', {
+        api_base: 'https://api-iam.intercom.io',
+        app_id: 'YOUR_WORKSPACE_ID',
+      });
+    }
+  }, [ready, user]);
+
+  // Update on route changes
   useEffect(() => {
     const handleRouteChange = () => {
       if (window.Intercom) {
@@ -200,16 +238,10 @@ export default function App({ Component, pageProps }) {
     <>
       <Component {...pageProps} />
       <Script
-        id="intercom-settings"
-        strategy="lazyOnload"
-        dangerouslySetInnerHTML={{
-          __html: `window.intercomSettings = { api_base: "https://api-iam.intercom.io", app_id: "YOUR_WORKSPACE_ID" };`,
-        }}
-      />
-      <Script
         id="intercom-widget"
         strategy="lazyOnload"
         src="https://widget.intercom.io/widget/YOUR_WORKSPACE_ID"
+        onLoad={() => setReady(true)}
       />
     </>
   );
@@ -222,35 +254,49 @@ export default function App({ Component, pageProps }) {
 
 ### Vue 3 with Composition API
 
-Create a composable for Intercom:
+Create a composable that handles JWT fetching and Messenger lifecycle:
 
 ```typescript
 // composables/useIntercom.ts
-import { onMounted, watch } from 'vue';
+import { onMounted, onUnmounted, watch, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
-interface IntercomUser {
-  name?: string;
-  email?: string;
-  created_at?: number;
-}
-
-export function useIntercom(appId: string, user?: IntercomUser) {
+export function useIntercom(appId: string, isAuthenticated: () => boolean) {
   const route = useRoute();
+  const loaded = ref(false);
 
   onMounted(() => {
-    window.intercomSettings = {
-      api_base: 'https://api-iam.intercom.io',
-      app_id: appId,
-      ...user,
-    };
-
     // Load the Intercom widget script
     const script = document.createElement('script');
     script.async = true;
     script.src = `https://widget.intercom.io/widget/${appId}`;
+    script.onload = () => {
+      loaded.value = true;
+      bootMessenger();
+    };
     document.head.appendChild(script);
   });
+
+  function bootMessenger() {
+    if (!loaded.value) return;
+
+    if (isAuthenticated()) {
+      fetch('/api/intercom-jwt', { credentials: 'include' })
+        .then(res => res.json())
+        .then(({ token }) => {
+          window.Intercom('boot', {
+            api_base: 'https://api-iam.intercom.io',
+            app_id: appId,
+            intercom_user_jwt: token,
+          });
+        });
+    } else {
+      window.Intercom('boot', {
+        api_base: 'https://api-iam.intercom.io',
+        app_id: appId,
+      });
+    }
+  }
 
   // Update on route changes
   watch(
@@ -261,12 +307,14 @@ export function useIntercom(appId: string, user?: IntercomUser) {
       }
     }
   );
-}
 
-export function shutdownIntercom() {
-  if (window.Intercom) {
-    window.Intercom('shutdown');
-  }
+  onUnmounted(() => {
+    if (window.Intercom) {
+      window.Intercom('shutdown');
+    }
+  });
+
+  return { bootMessenger };
 }
 ```
 
@@ -276,11 +324,10 @@ Use in your App component:
 <!-- App.vue -->
 <script setup lang="ts">
 import { useIntercom } from './composables/useIntercom';
+import { useAuth } from './composables/useAuth';
 
-useIntercom('YOUR_WORKSPACE_ID', {
-  name: 'Jane Doe',
-  email: 'jane@example.com',
-});
+const { isAuthenticated } = useAuth();
+useIntercom('YOUR_WORKSPACE_ID', () => isAuthenticated.value);
 </script>
 
 <template>
@@ -313,20 +360,22 @@ Regardless of framework, all SPAs share these concerns:
 The Intercom widget script should load once and persist across route changes. Do not re-insert the `<script>` tag on navigation — use `Intercom('update')` instead.
 
 ### Identity Changes
-When a user logs in or switches accounts within the SPA:
+When a user logs in or switches accounts within the SPA, shut down and re-boot with a fresh JWT:
 
 ```javascript
 // 1. Shut down the current session
 Intercom('shutdown');
 
-// 2. Boot with the new user's identity
-Intercom('boot', {
-  api_base: 'https://api-iam.intercom.io',
-  app_id: 'YOUR_WORKSPACE_ID',
-  user_id: newUser.id,
-  name: newUser.name,
-  email: newUser.email,
-});
+// 2. Fetch a new JWT for the new user and boot
+fetch('/api/intercom-jwt', { credentials: 'include' })
+  .then(res => res.json())
+  .then(({ token }) => {
+    Intercom('boot', {
+      api_base: 'https://api-iam.intercom.io',
+      app_id: 'YOUR_WORKSPACE_ID',
+      intercom_user_jwt: token,
+    });
+  });
 ```
 
 ### Content Security Policy (CSP)
@@ -349,10 +398,12 @@ For TypeScript projects, add type declarations for the global `Intercom` functio
 interface IntercomSettings {
   api_base?: string;
   app_id: string;
+  intercom_user_jwt?: string;
   name?: string;
   email?: string;
   user_id?: string;
   created_at?: number;
+  session_duration?: number;
   [key: string]: unknown;
 }
 
