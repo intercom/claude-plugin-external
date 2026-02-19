@@ -23,9 +23,9 @@ Gather these from the user before proceeding:
    - Found in Intercom: **Settings > Installation > Web**
    - Or in the URL bar: `https://app.intercom.com/a/apps/<workspace_id>/...`
 
-2. **Identity Verification Secret** (also called Messenger API Secret) — Found in Intercom at **Settings > Messenger > Security**. This is the HMAC secret used to sign JWTs. It must never appear in frontend code.
+2. **Identity Verification Secret** (also called Messenger API Secret) — Found in Intercom at **Settings > Channels > Messenger > Security**. This is the HMAC secret used to sign JWTs. It must never appear in frontend code.
 
-Ask the user for both values. Do not proceed without the Workspace ID. If they don't have the Identity Verification Secret yet, direct them to **Settings > Messenger > Security** in Intercom to enable it.
+Ask the user for both values. Do not proceed without the Workspace ID. If they don't have the Identity Verification Secret yet, direct them to **Settings > Channels > Messenger > Security** in Intercom to enable it.
 
 ## Installation Overview
 
@@ -214,6 +214,22 @@ In Intercom (**Settings > Messenger > Security**), mark identifying attributes (
 ### Token Expiration
 
 Set short JWT expiration times. Two hours is a good default. When a token expires mid-session, Intercom automatically issues a fresh 1-hour cookie if the user is still active. Session duration defaults to 7 days but can be shortened via the `session_duration` attribute in the JWT.
+
+To refresh an expired token, fetch a new JWT from your backend and re-boot the Messenger:
+
+```javascript
+function refreshIntercomToken() {
+  fetch('/api/intercom-jwt', { credentials: 'include' })
+    .then(res => res.json())
+    .then(({ token }) => {
+      window.Intercom('boot', {
+        api_base: 'https://api-iam.intercom.io',
+        app_id: 'YOUR_WORKSPACE_ID',
+        intercom_user_jwt: token,
+      });
+    });
+}
+```
 
 ## Single-Page App (SPA) Route Changes
 
