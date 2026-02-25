@@ -4,9 +4,10 @@ license: MIT
 description: >
   Install the Intercom Messenger on a website or web application with
   secure JWT-based identity verification. Generates backend and frontend
-  code for React, Next.js, Vue.js, and plain JavaScript. Use when the user
-  asks to "install Intercom", "add the Intercom Messenger", "set up Intercom
-  chat widget", "add customer chat to my website", or "integrate Intercom".
+  code for React, Next.js, Vue.js, Angular, Ember, and plain JavaScript.
+  Supports Node.js, Python (Flask/Django), PHP, and Ruby backends. Use when
+  the user asks to "install Intercom", "add the Intercom Messenger", "set up
+  Intercom chat widget", "add customer chat to my website", or "integrate Intercom".
 disable-model-invocation: true
 argument-hint: "[framework]"
 ---
@@ -103,6 +104,59 @@ def intercom_jwt():
     return {'token': token}
 ```
 
+### Python / Django Example
+
+```python
+# views.py
+import jwt
+import time
+import os
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
+INTERCOM_SECRET = os.environ['INTERCOM_IDENTITY_SECRET']
+
+@login_required
+def intercom_jwt(request):
+    token = jwt.encode(
+        {
+            'user_id': str(request.user.id),
+            'email': request.user.email,
+            'name': request.user.get_full_name(),
+            'exp': int(time.time()) + 7200,  # 2 hours
+        },
+        INTERCOM_SECRET,
+        algorithm='HS256',
+    )
+    return JsonResponse({'token': token})
+```
+
+Add the URL pattern: `path('api/intercom-jwt', views.intercom_jwt)` in your `urls.py`.
+
+### PHP Example
+
+Requires the `firebase/php-jwt` package: `composer require firebase/php-jwt`
+
+```php
+<?php
+// api/intercom-jwt.php
+require_once 'vendor/autoload.php';
+use Firebase\JWT\JWT;
+
+$secret = getenv('INTERCOM_IDENTITY_SECRET');
+$user = get_authenticated_user(); // Your auth logic
+
+$token = JWT::encode([
+    'user_id' => (string) $user->id,
+    'email' => $user->email,
+    'name' => $user->name,
+    'exp' => time() + 7200, // 2 hours
+], $secret, 'HS256');
+
+header('Content-Type: application/json');
+echo json_encode(['token' => $token]);
+```
+
 ### Ruby / Rails Example
 
 ```ruby
@@ -126,6 +180,8 @@ class Api::IntercomController < ApplicationController
   end
 end
 ```
+
+**Alternative: `intercom-rails` gem** — For simpler setups, Intercom provides a Rails gem that auto-injects the Messenger. Install with `gem "intercom-rails"`, run `rails generate intercom:config YOUR_WORKSPACE_ID`, and configure the secret in the generated initializer. See the [Intercom install page](https://app.intercom.com/a/apps/_/settings/channels/messenger/install) for details. The JWT approach above gives you more control and works with any Ruby backend, not just Rails.
 
 Adapt the example to the user's backend language and framework. The key requirements are:
 - The endpoint is authenticated (only the logged-in user can get their own JWT)
@@ -171,7 +227,7 @@ No JWT is needed for anonymous visitors. Intercom tracks them as leads.
 
 ## Framework-Specific Installation
 
-If the user is using React, Next.js, Vue.js, or another SPA framework, refer to `references/framework-guides.md` for JWT-integrated installation code. Ask the user what framework they are using if it is not obvious from their codebase.
+If the user is using React, Next.js, Vue.js, Angular, Ember, or another SPA framework, refer to `references/framework-guides.md` for JWT-integrated installation code. Ask the user what framework they are using if it is not obvious from their codebase.
 
 After reading the framework guide, adapt the code to the user's specific project structure — find their main layout component, app entry point, or equivalent, and integrate the Messenger there.
 
@@ -271,8 +327,21 @@ Where to place this depends on the routing library:
 - **React Router** — In a `useEffect` hook that watches `location` changes
 - **Next.js App Router** — In a layout component using `usePathname()`
 - **Vue Router** — In a `router.afterEach()` navigation guard
+- **Angular Router** — In a service subscribing to `NavigationEnd` events
+- **Ember Router** — In an instance initializer listening to `routeDidChange`
 
 Without this, the Messenger may show stale content or miss page-specific triggers.
+
+## Third-Party Integrations
+
+Intercom also supports installation via these platforms. These don't require writing code — configure them through each platform's UI:
+
+- **WordPress** — Install the official Intercom plugin from the WordPress plugin directory
+- **Shopify** — Install via the Shopify App Store
+- **Google Tag Manager** — Add the Intercom tag using the GTM template gallery
+- **Segment** — Enable the Intercom destination in your Segment workspace
+
+For setup instructions, direct users to the install page in Intercom: **Settings > Channels > Messenger > Install**.
 
 ## Installation Checklist
 
