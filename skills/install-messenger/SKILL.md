@@ -1,10 +1,12 @@
 ---
 name: install-messenger
+license: MIT
 description: >
-  This skill should be used when the user asks to "install Intercom",
-  "add the Intercom Messenger", "set up Intercom chat widget",
-  "add customer chat to my website", or "integrate Intercom" into
-  their website or application.
+  Install the Intercom Messenger on a website or web application with
+  secure JWT-based identity verification. Generates backend and frontend
+  code for React, Next.js, Vue.js, and plain JavaScript. Use when the user
+  asks to "install Intercom", "add the Intercom Messenger", "set up Intercom
+  chat widget", "add customer chat to my website", or "integrate Intercom".
 disable-model-invocation: true
 argument-hint: "[framework]"
 ---
@@ -26,6 +28,8 @@ Gather these from the user before proceeding:
 2. **Identity Verification Secret** (also called Messenger API Secret) — Found in Intercom at **Settings > Channels > Messenger > Security**. This is the HMAC secret used to sign JWTs. It must never appear in frontend code.
 
 Ask the user for both values. Do not proceed without the Workspace ID. If they don't have the Identity Verification Secret yet, direct them to **Settings > Channels > Messenger > Security** in Intercom to enable it.
+
+In all generated code, replace `YOUR_WORKSPACE_ID` with the user's actual Workspace ID. Do not leave placeholders — substitute the real values they provided.
 
 ## Installation Overview
 
@@ -209,7 +213,7 @@ Always include the shutdown call. Skipping it leaks conversation data between us
 
 ### Protect Identifying Attributes
 
-In Intercom (**Settings > Messenger > Security**), mark identifying attributes (email, phone, account IDs) as **protected**. This prevents client-side code from spoofing these values — only the server-signed JWT can set them.
+In Intercom (**Settings > Channels > Messenger > Security**), mark identifying attributes (email, phone, account IDs) as **protected**. This prevents client-side code from spoofing these values — only the server-signed JWT can set them.
 
 ### Token Expiration
 
@@ -230,6 +234,32 @@ function refreshIntercomToken() {
     });
 }
 ```
+
+## Troubleshooting
+
+### JWT Library Not Installed
+Error: `Cannot find module 'jsonwebtoken'` (Node.js), `ModuleNotFoundError: No module named 'jwt'` (Python), or `LoadError: cannot load such file -- jwt` (Ruby)
+Solution: Install the JWT library for the user's language — `npm install jsonwebtoken`, `pip install PyJWT`, or `gem install jwt`.
+
+### Wrong Identity Verification Secret
+Symptom: Messenger loads but shows "Identity verification failed" or user attributes don't appear.
+Cause: The secret used to sign JWTs doesn't match the workspace's Identity Verification Secret.
+Solution: Verify the secret in Intercom at **Settings > Channels > Messenger > Security**. Ensure the environment variable holds the correct value for this workspace.
+
+### Plan Doesn't Support Identity Verification
+Symptom: Identity Verification Secret not available in Intercom settings.
+Cause: Identity verification is a paid feature not available on all Intercom plans.
+Solution: Check the workspace's Intercom plan. If identity verification is unavailable, the user may need to upgrade or use the insecure installation (with explicit acknowledgment of the security trade-off).
+
+### JWT `exp` in the Past
+Symptom: Messenger rejects the token immediately after creation.
+Cause: Server clock is wrong or `exp` calculation is incorrect.
+Solution: Check the server's system time (`date` command). Ensure NTP is configured. Verify the `exp` value is a future Unix timestamp in seconds (not milliseconds).
+
+### CORS Errors on JWT Endpoint
+Symptom: Browser console shows `Access-Control-Allow-Origin` errors when fetching the JWT.
+Cause: The backend JWT endpoint doesn't allow requests from the frontend's origin.
+Solution: Configure CORS on the JWT endpoint to allow the frontend origin. For Express: `cors({ origin: 'https://your-app.com', credentials: true })`. For other frameworks, add the appropriate CORS headers.
 
 ## Single-Page App (SPA) Route Changes
 
