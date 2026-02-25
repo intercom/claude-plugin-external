@@ -147,7 +147,6 @@ Add before the closing `</body>` tag:
     .then(res => res.json())
     .then(({ token }) => {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: 'YOUR_WORKSPACE_ID',
         intercom_user_jwt: token,
       });
@@ -164,7 +163,6 @@ For pages where the visitor is not logged in (marketing pages, docs), boot witho
 
 ```javascript
 window.Intercom('boot', {
-  api_base: 'https://api-iam.intercom.io',
   app_id: 'YOUR_WORKSPACE_ID',
 });
 ```
@@ -179,15 +177,15 @@ After reading the framework guide, adapt the code to the user's specific project
 
 ## Regional Data Centers
 
-Intercom operates in multiple regions. The `api_base` URL must match the user's data residency region:
+Most Intercom workspaces are in the US region, which is the default — no `api_base` is needed. Only add `api_base` if the user's workspace is hosted in EU or Australia:
 
-| Region | `api_base` URL |
-|--------|----------------|
-| US (default) | `https://api-iam.intercom.io` |
-| EU (Ireland) | `https://api-iam.eu.intercom.io` |
-| Australia | `https://api-iam.au.intercom.io` |
+| Region | `api_base` | Required? |
+|--------|------------|-----------|
+| US (default) | *(not needed)* | No |
+| EU (Ireland) | `https://api-iam.eu.intercom.io` | Yes |
+| Australia | `https://api-iam.au.intercom.io` | Yes |
 
-Ask the user which region their workspace is hosted in if they mention EU or Australian hosting, GDPR compliance, or data residency requirements. Default to US if unspecified.
+If the user mentions EU or Australian hosting, GDPR compliance, or data residency requirements, add the appropriate `api_base` to every `Intercom('boot', ...)` call. Otherwise, omit it.
 
 ## Security Best Practices
 
@@ -204,7 +202,6 @@ After shutdown, re-initialize for the next user or as anonymous:
 
 ```javascript
 Intercom('boot', {
-  api_base: 'https://api-iam.intercom.io',
   app_id: 'YOUR_WORKSPACE_ID',
 });
 ```
@@ -227,7 +224,6 @@ function refreshIntercomToken() {
     .then(res => res.json())
     .then(({ token }) => {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: 'YOUR_WORKSPACE_ID',
         intercom_user_jwt: token,
       });
@@ -286,7 +282,7 @@ After generating the installation code, verify with the user:
 2. The Identity Verification Secret is stored as an environment variable (not hardcoded)
 3. JWTs include `user_id` and have a short expiration (`exp`)
 4. The frontend passes `intercom_user_jwt` when booting the Messenger
-5. The Workspace ID and `api_base` are correct for their region
+5. The Workspace ID is correct (and `api_base` is set if the workspace is in EU or Australia)
 6. The logout flow calls `Intercom('shutdown')`
 7. SPA route changes trigger `Intercom('update')`
 8. Identifying attributes are marked as protected in Intercom settings
@@ -298,7 +294,6 @@ If the user explicitly asks for an "insecure installation" (no JWT, no identity 
 ```html
 <script>
   window.intercomSettings = {
-    api_base: "https://api-iam.intercom.io",
     app_id: "YOUR_WORKSPACE_ID",
     name: "Jane Doe",
     email: "jane@example.com",

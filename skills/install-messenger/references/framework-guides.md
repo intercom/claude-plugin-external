@@ -42,7 +42,6 @@ export function IntercomProvider({ appId, isAuthenticated, children }: IntercomP
         .then(res => res.json())
         .then(({ token }) => {
           Intercom({
-            api_base: 'https://api-iam.intercom.io',
             app_id: appId,
             intercom_user_jwt: token,
           });
@@ -50,7 +49,6 @@ export function IntercomProvider({ appId, isAuthenticated, children }: IntercomP
     } else {
       // Anonymous visitor — no JWT needed
       Intercom({
-        api_base: 'https://api-iam.intercom.io',
         app_id: appId,
       });
     }
@@ -137,14 +135,12 @@ export function IntercomMessenger({ appId, isAuthenticated }: IntercomMessengerP
         .then(res => res.json())
         .then(({ token }) => {
           window.Intercom('boot', {
-            api_base: 'https://api-iam.intercom.io',
             app_id: appId,
             intercom_user_jwt: token,
           });
         });
     } else {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: appId,
       });
     }
@@ -212,14 +208,12 @@ export default function App({ Component, pageProps }) {
         .then(res => res.json())
         .then(({ token }) => {
           window.Intercom('boot', {
-            api_base: 'https://api-iam.intercom.io',
             app_id: 'YOUR_WORKSPACE_ID',
             intercom_user_jwt: token,
           });
         });
     } else {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: 'YOUR_WORKSPACE_ID',
       });
     }
@@ -287,14 +281,12 @@ export function useIntercom(appId: string, isAuthenticated: () => boolean) {
         .then(res => res.json())
         .then(({ token }) => {
           window.Intercom('boot', {
-            api_base: 'https://api-iam.intercom.io',
             app_id: appId,
             intercom_user_jwt: token,
           });
         });
     } else {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: appId,
       });
     }
@@ -373,7 +365,6 @@ fetch('/api/intercom-jwt', { credentials: 'include' })
   .then(res => res.json())
   .then(({ token }) => {
     Intercom('boot', {
-      api_base: 'https://api-iam.intercom.io',
       app_id: 'YOUR_WORKSPACE_ID',
       intercom_user_jwt: token,
     });
