@@ -12,9 +12,9 @@ Connect your Intercom workspace to Claude Code. Search conversations, analyze cu
 
 | Skill | Invocation | Description |
 |-------|-----------|-------------|
-| **Intercom Insights** | Auto-triggered | Analyze conversations, find support patterns, investigate customer issues, and look up contacts. Triggers automatically when you ask about your Intercom data. |
-| **Install Messenger** | `/intercom:install-messenger [framework]` | Step-by-step guide to install the Intercom Messenger on your website. Supports React, Next.js, Vue.js, and plain JavaScript. |
-| **Intercom Search** | `/intercom:intercom-search [type] [query]` | Quick search for conversations or contacts by keyword, email, or topic. Returns formatted results with follow-up options. |
+| **Intercom Analysis** | Auto-triggered | Analyze conversations, find support patterns, investigate customer issues, and look up contacts. Triggers automatically when you ask about your Intercom data. |
+| **Install Messenger** | `/intercom:install-messenger [framework]` | Install the Intercom Messenger with secure JWT-based identity verification. Supports React, Next.js, Vue.js, and plain JavaScript. |
+| **Customer 360** | `/intercom:customer-360 [email or company]` | Build a comprehensive customer profile with conversation history, account context, and interaction timeline. |
 
 ## Usage Examples
 
@@ -28,14 +28,9 @@ Show me the most common topics in open conversations this week
 Look up all conversations from jane@example.com and summarize her issues
 ```
 
-**Search for specific conversations:**
+**Build a customer profile:**
 ```
-/intercom:intercom-search conversations billing error
-```
-
-**Find contacts at a company:**
-```
-/intercom:intercom-search contacts @acme.com
+/intercom:customer-360 jane@example.com
 ```
 
 **Install the Messenger:**
@@ -48,9 +43,9 @@ Look up all conversations from jane@example.com and summarize her issues
 Pull up conversation #12345 and show me the full thread
 ```
 
-## Limitations
+## Access & Limitations
 
-- **Read-only access** — The plugin can search and retrieve data but cannot create, update, or delete conversations, contacts, or other Intercom objects.
+- **Safe, read-only access** — The plugin can search and retrieve data but cannot create, update, or delete conversations, contacts, or other Intercom objects. Your workspace data is never modified.
 - **US region only** — Currently supports US-hosted Intercom workspaces. EU and Australia region support is planned.
 - **Rate limits** — Search operations are subject to Intercom API rate limits. The MCP server handles throttling automatically.
 

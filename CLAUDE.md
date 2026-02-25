@@ -21,11 +21,11 @@ User → Claude Code CLI → Skill (SKILL.md) → MCP Server (https://mcp.interc
 
 Three skills live under `skills/`, each in its own directory:
 
-| Skill               | Trigger                                              | Key Files                                    |
-| ------------------- | ---------------------------------------------------- | -------------------------------------------- |
-| `install-messenger` | Explicit: `/intercom:install-messenger [framework]`  | `SKILL.md`, `references/framework-guides.md` |
-| `intercom-insights` | Auto-triggered by keywords                           | `SKILL.md`, `references/mcp-tools.md`        |
-| `intercom-search`   | Explicit: `/intercom:intercom-search [type] [query]` | `SKILL.md`                                   |
+| Skill               | Trigger                                                    | Key Files                                    |
+| ------------------- | ---------------------------------------------------------- | -------------------------------------------- |
+| `install-messenger` | Explicit: `/intercom:install-messenger [framework]`        | `SKILL.md`, `references/framework-guides.md` |
+| `intercom-analysis` | Auto-triggered by keywords                                 | `SKILL.md`, `references/mcp-tools.md`        |
+| `customer-360`      | Explicit: `/intercom:customer-360 [email or company name]` | `SKILL.md`                                   |
 
 ### Skill File Structure
 
