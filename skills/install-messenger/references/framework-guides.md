@@ -42,6 +42,7 @@ export function IntercomProvider({ appId, isAuthenticated, children }: IntercomP
         .then(res => res.json())
         .then(({ token }) => {
           Intercom({
+            api_base: 'https://api-iam.intercom.io',
             app_id: appId,
             intercom_user_jwt: token,
           });
@@ -49,6 +50,7 @@ export function IntercomProvider({ appId, isAuthenticated, children }: IntercomP
     } else {
       // Anonymous visitor — no JWT needed
       Intercom({
+        api_base: 'https://api-iam.intercom.io',
         app_id: appId,
       });
     }
