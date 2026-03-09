@@ -23,12 +23,12 @@ Only use the insecure (non-JWT) installation if the user explicitly asks for an 
 Gather these from the user before proceeding:
 
 1. **Workspace ID** (also called App ID) — A short alphanumeric string like `abc12345`.
-   - Found in Intercom: **Settings > Installation > Web**
+   - Found on the [Intercom Messenger install page](https://app.intercom.com/a/apps/_/settings/channels/messenger/install)
    - Or in the URL bar: `https://app.intercom.com/a/apps/<workspace_id>/...`
 
-2. **Identity Verification Secret** (also called Messenger API Secret) — Found in Intercom at **Settings > Channels > Messenger > Security**. This is the HMAC secret used to sign JWTs. It must never appear in frontend code.
+2. **Identity Verification Secret** (also called Messenger API Secret) — Found on the [Messenger Security page](https://app.intercom.com/a/apps/_/settings/channels/messenger/security). This is the HMAC secret used to sign JWTs. It must never appear in frontend code.
 
-Ask the user for both values. Do not proceed without the Workspace ID. If they don't have the Identity Verification Secret yet, direct them to **Settings > Channels > Messenger > Security** in Intercom to enable it.
+Ask the user for both values. Do not proceed without the Workspace ID. If they don't have the Identity Verification Secret yet, direct them to the [Messenger Security page](https://app.intercom.com/a/apps/_/settings/channels/messenger/security) to enable it.
 
 In all generated code, replace `YOUR_WORKSPACE_ID` with the user's actual Workspace ID. Do not leave placeholders — substitute the real values they provided.
 
@@ -266,7 +266,7 @@ Always include the shutdown call. Skipping it leaks conversation data between us
 
 ### Protect Identifying Attributes
 
-In Intercom (**Settings > Channels > Messenger > Security**), mark identifying attributes (email, phone, account IDs) as **protected**. This prevents client-side code from spoofing these values — only the server-signed JWT can set them.
+On the [Messenger Security page](https://app.intercom.com/a/apps/_/settings/channels/messenger/security), mark identifying attributes (email, phone, account IDs) as **protected**. This prevents client-side code from spoofing these values — only the server-signed JWT can set them.
 
 ### Token Expiration
 
@@ -296,12 +296,12 @@ Solution: Install the JWT library for the user's language — `npm install jsonw
 ### Wrong Identity Verification Secret
 Symptom: Messenger loads but shows "Identity verification failed" or user attributes don't appear.
 Cause: The secret used to sign JWTs doesn't match the workspace's Identity Verification Secret.
-Solution: Verify the secret in Intercom at **Settings > Channels > Messenger > Security**. Ensure the environment variable holds the correct value for this workspace.
+Solution: Verify the secret on the [Messenger Security page](https://app.intercom.com/a/apps/_/settings/channels/messenger/security). Ensure the environment variable holds the correct value for this workspace.
 
 ### Plan Doesn't Support Identity Verification
 Symptom: Identity Verification Secret not available in Intercom settings.
 Cause: Identity verification is a paid feature not available on all Intercom plans.
-Solution: Check the workspace's Intercom plan. If identity verification is unavailable, the user may need to upgrade or use the insecure installation (with explicit acknowledgment of the security trade-off).
+Solution: Check the workspace's Intercom plan on the [Messenger Security page](https://app.intercom.com/a/apps/_/settings/channels/messenger/security). If identity verification is unavailable, the user may need to upgrade or use the insecure installation (with explicit acknowledgment of the security trade-off).
 
 ### JWT `exp` in the Past
 Symptom: Messenger rejects the token immediately after creation.
@@ -341,7 +341,36 @@ Intercom also supports installation via these platforms. These don't require wri
 - **Google Tag Manager** — Add the Intercom tag using the GTM template gallery
 - **Segment** — Enable the Intercom destination in your Segment workspace
 
-For setup instructions, direct users to the install page in Intercom: **Settings > Channels > Messenger > Install**.
+For setup instructions, direct users to the [Messenger install page](https://app.intercom.com/a/apps/_/settings/channels/messenger/install).
+
+## Verifying the Installation
+
+After generating the code, verify the installation before considering the task complete. If you have browser automation tools available (e.g., Playwright MCP, playwright-cli, or similar), use them to programmatically verify. Otherwise, tell the user how to verify manually.
+
+### Automated Verification
+
+If browser automation is available, run the app and verify:
+
+1. **Navigate to a public page** and check:
+   - `typeof window.Intercom === 'function'` — the Intercom stub is initialized
+   - A `<script>` tag with `src` containing `widget.intercom.io/widget/WORKSPACE_ID` exists in the DOM
+   - The boot call was queued with the correct `app_id` (check `window.Intercom.q`)
+
+2. **Log in as a test user**, then check:
+   - The JWT endpoint returns HTTP 200 with a `{ "token": "..." }` response
+   - The boot call includes `intercom_user_jwt` with the signed token
+
+3. **Note:** The Intercom widget bubble (iframe) loads from an external CDN (`widget.intercom.io`). In headless or sandboxed browser environments, the CDN may be unreachable — the widget script will fail to load and no iframe will appear. This is a network restriction of the test environment, not a code problem. If the stub function, script tag, JWT endpoint, and boot calls all check out, the installation is correct.
+
+### Manual Verification
+
+If automated verification is not possible, instruct the user to verify by:
+
+1. Starting the app and opening it in a real browser
+2. Opening the browser console and confirming `typeof window.Intercom === 'function'`
+3. Checking that the Intercom Messenger bubble appears in the bottom-right corner
+4. Logging in and verifying the bubble still appears (now with identity)
+5. Checking the browser console for any errors related to Intercom or the JWT endpoint
 
 ## Installation Checklist
 
@@ -354,7 +383,17 @@ After generating the installation code, verify with the user:
 5. The Workspace ID is correct (and `api_base` is set if the workspace is in EU or Australia)
 6. The logout flow calls `Intercom('shutdown')`
 7. SPA route changes trigger `Intercom('update')`
-8. Identifying attributes are marked as protected in Intercom settings
+
+## Post-Installation: Enforce JWT Authentication
+
+After the code is deployed, the user must enable and enforce identity verification in Intercom. Direct them to complete these steps:
+
+1. Go to the [Messenger Security page](https://app.intercom.com/a/apps/_/settings/channels/messenger/security)
+2. **Enable Identity Verification** if not already enabled — this activates JWT-based authentication for the Messenger
+3. **Enforce Identity Verification** — once enabled and confirmed working, switch to "Enforced" mode so that unauthenticated Messenger sessions are rejected
+4. **Mark identifying attributes as protected** — on the same page, mark attributes like email, phone, and account IDs as protected so only server-signed JWTs can set them
+
+This is a critical step. Without enforcement, the JWT signing is optional and users can still be impersonated via the browser console. Enforcement ensures only server-signed identities are accepted.
 
 ## Insecure Installation (Only If Explicitly Requested)
 
