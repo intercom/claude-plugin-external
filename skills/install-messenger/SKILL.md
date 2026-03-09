@@ -79,109 +79,7 @@ app.get('/api/intercom-jwt', requireAuth, (req, res) => {
 });
 ```
 
-### Python / Flask Example
-
-```python
-import jwt
-import time
-import os
-
-INTERCOM_SECRET = os.environ['INTERCOM_IDENTITY_SECRET']
-
-@app.route('/api/intercom-jwt')
-@login_required
-def intercom_jwt():
-    token = jwt.encode(
-        {
-            'user_id': str(current_user.id),
-            'email': current_user.email,
-            'name': current_user.name,
-            'exp': int(time.time()) + 7200,  # 2 hours
-        },
-        INTERCOM_SECRET,
-        algorithm='HS256',
-    )
-    return {'token': token}
-```
-
-### Python / Django Example
-
-```python
-# views.py
-import jwt
-import time
-import os
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-
-INTERCOM_SECRET = os.environ['INTERCOM_IDENTITY_SECRET']
-
-@login_required
-def intercom_jwt(request):
-    token = jwt.encode(
-        {
-            'user_id': str(request.user.id),
-            'email': request.user.email,
-            'name': request.user.get_full_name(),
-            'exp': int(time.time()) + 7200,  # 2 hours
-        },
-        INTERCOM_SECRET,
-        algorithm='HS256',
-    )
-    return JsonResponse({'token': token})
-```
-
-Add the URL pattern: `path('api/intercom-jwt', views.intercom_jwt)` in your `urls.py`.
-
-### PHP Example
-
-Requires the `firebase/php-jwt` package: `composer require firebase/php-jwt`
-
-```php
-<?php
-// api/intercom-jwt.php
-require_once 'vendor/autoload.php';
-use Firebase\JWT\JWT;
-
-$secret = getenv('INTERCOM_IDENTITY_SECRET');
-$user = get_authenticated_user(); // Your auth logic
-
-$token = JWT::encode([
-    'user_id' => (string) $user->id,
-    'email' => $user->email,
-    'name' => $user->name,
-    'exp' => time() + 7200, // 2 hours
-], $secret, 'HS256');
-
-header('Content-Type: application/json');
-echo json_encode(['token' => $token]);
-```
-
-### Ruby / Rails Example
-
-```ruby
-# app/controllers/api/intercom_controller.rb
-class Api::IntercomController < ApplicationController
-  before_action :authenticate_user!
-
-  def jwt
-    token = JWT.encode(
-      {
-        user_id: current_user.id.to_s,
-        email: current_user.email,
-        name: current_user.name,
-        exp: 2.hours.from_now.to_i,
-      },
-      ENV['INTERCOM_IDENTITY_SECRET'],
-      'HS256'
-    )
-
-    render json: { token: token }
-  end
-end
-```
-
-**Alternative: `intercom-rails` gem** — For simpler setups, Intercom provides a Rails gem that auto-injects the Messenger. Install with `gem "intercom-rails"`, run `rails generate intercom:config YOUR_WORKSPACE_ID`, and configure the secret in the generated initializer. See the [Intercom install page](https://app.intercom.com/a/apps/_/settings/channels/messenger/install) for details. The JWT approach above gives you more control and works with any Ruby backend, not just Rails.
+For Python (Flask/Django), PHP, and Ruby/Rails examples, see `references/backend-examples.md`. The pattern is identical across languages.
 
 Adapt the example to the user's backend language and framework. The key requirements are:
 - The endpoint is authenticated (only the logged-in user can get their own JWT)
@@ -215,15 +113,7 @@ Add before the closing `</body>` tag:
 
 ### Anonymous Visitors
 
-For pages where the visitor is not logged in (marketing pages, docs), boot without a JWT:
-
-```javascript
-window.Intercom('boot', {
-  app_id: 'YOUR_WORKSPACE_ID',
-});
-```
-
-No JWT is needed for anonymous visitors. Intercom tracks them as leads.
+For unauthenticated pages, boot without a JWT: `Intercom('boot', { app_id: 'YOUR_WORKSPACE_ID' })`. Intercom tracks anonymous visitors as leads.
 
 ## Framework-Specific Installation
 
@@ -264,28 +154,9 @@ Intercom('boot', {
 
 Always include the shutdown call. Skipping it leaks conversation data between users on shared devices.
 
-### Protect Identifying Attributes
-
-On the [Messenger Security page](https://app.intercom.com/a/apps/_/settings/channels/messenger/security), mark identifying attributes (email, phone, account IDs) as **protected**. This prevents client-side code from spoofing these values — only the server-signed JWT can set them.
-
 ### Token Expiration
 
-Set short JWT expiration times. Two hours is a good default. When a token expires mid-session, Intercom automatically issues a fresh 1-hour cookie if the user is still active. Session duration defaults to 7 days but can be shortened via the `session_duration` attribute in the JWT.
-
-To refresh an expired token, fetch a new JWT from your backend and re-boot the Messenger:
-
-```javascript
-function refreshIntercomToken() {
-  fetch('/api/intercom-jwt', { credentials: 'include' })
-    .then(res => res.json())
-    .then(({ token }) => {
-      window.Intercom('boot', {
-        app_id: 'YOUR_WORKSPACE_ID',
-        intercom_user_jwt: token,
-      });
-    });
-}
-```
+Set short JWT expiration times — two hours is a good default. To refresh an expired token, re-fetch the JWT from the backend and call `Intercom('boot', ...)` again with the new token.
 
 ## Troubleshooting
 
@@ -315,84 +186,21 @@ Solution: Configure CORS on the JWT endpoint to allow the frontend origin. For E
 
 ## Single-Page App (SPA) Route Changes
 
-In SPAs where the page does not fully reload on navigation, notify the Messenger of route changes:
-
-```javascript
-// Call after each client-side route change
-Intercom('update');
-```
-
-Where to place this depends on the routing library:
-
-- **React Router** — In a `useEffect` hook that watches `location` changes
-- **Next.js App Router** — In a layout component using `usePathname()`
-- **Vue Router** — In a `router.afterEach()` navigation guard
-- **Angular Router** — In a service subscribing to `NavigationEnd` events
-- **Ember Router** — In an instance initializer listening to `routeDidChange`
-
-Without this, the Messenger may show stale content or miss page-specific triggers.
+In SPAs, call `Intercom('update')` after each client-side route change. See `references/framework-guides.md` for framework-specific placement (React Router, Next.js, Vue Router, Angular, Ember).
 
 ## Third-Party Integrations
 
-Intercom also supports installation via these platforms. These don't require writing code — configure them through each platform's UI:
-
-- **WordPress** — Install the official Intercom plugin from the WordPress plugin directory
-- **Shopify** — Install via the Shopify App Store
-- **Google Tag Manager** — Add the Intercom tag using the GTM template gallery
-- **Segment** — Enable the Intercom destination in your Segment workspace
-
-For setup instructions, direct users to the [Messenger install page](https://app.intercom.com/a/apps/_/settings/channels/messenger/install).
+Intercom also supports code-free installation via WordPress, Shopify, Google Tag Manager, and Segment. Direct users to the [Messenger install page](https://app.intercom.com/a/apps/_/settings/channels/messenger/install) for setup instructions.
 
 ## Verifying the Installation
 
-After generating the code, verify the installation before considering the task complete. If you have browser automation tools available (e.g., Playwright MCP, playwright-cli, or similar), use them to programmatically verify. Otherwise, tell the user how to verify manually.
+After generating the code, verify the installation before considering the task complete.
 
-### Automated Verification with Browser Automation
+**With browser automation** (Playwright MCP, playwright-cli, etc.): Navigate to the app, confirm `typeof window.Intercom === 'function'`, check the script tag for `widget.intercom.io/widget/WORKSPACE_ID`, and verify the JWT endpoint returns HTTP 200 with `{ "token": "..." }` for an authenticated user. Note: in headless/sandboxed environments, the widget iframe may not load due to CDN restrictions — this is not a code problem.
 
-If browser automation tools are available (e.g., Playwright MCP, playwright-cli, or similar), run the app and verify:
+**With Intercom MCP tools** (`search_contacts`): After a user logs in and loads a page with the Messenger, search for the user by name or `external_id`. Confirm the contact exists with `role: "user"` and the correct `external_id` — this proves the full chain from JWT signing to Intercom identity creation.
 
-1. **Navigate to a public page** and check:
-   - `typeof window.Intercom === 'function'` — the Intercom stub is initialized
-   - A `<script>` tag with `src` containing `widget.intercom.io/widget/WORKSPACE_ID` exists in the DOM
-   - The boot call was queued with the correct `app_id` (check `window.Intercom.q`)
-
-2. **Log in as a test user**, then check:
-   - The JWT endpoint returns HTTP 200 with a `{ "token": "..." }` response
-   - The boot call includes `intercom_user_jwt` with the signed token
-
-3. **Note:** The Intercom widget bubble (iframe) loads from an external CDN (`widget.intercom.io`). In headless or sandboxed browser environments, the CDN may be unreachable — the widget script will fail to load and no iframe will appear. This is a network restriction of the test environment, not a code problem. If the stub function, script tag, JWT endpoint, and boot calls all check out, the installation is correct.
-
-### Automated Verification with Intercom MCP
-
-If the Intercom MCP tools are available (e.g., `search_contacts`), verify that a logged-in user's identity was created in Intercom after they loaded the Messenger:
-
-1. Have the user log in to the app (or use a test account) and load a page with the Messenger
-2. Use `search_contacts` to search for the user by name or `external_id` matching the `user_id` from the JWT
-3. Confirm the contact exists with `role: "user"` (not `"lead"`) and the correct `external_id` — this proves the JWT was accepted and Intercom created a verified user record
-
-This is the strongest verification available — it confirms the full chain from JWT signing to Intercom identity creation.
-
-### Manual Verification
-
-Instruct the user to verify by:
-
-1. Start the app and open it in a browser
-2. Confirm the Intercom Messenger bubble appears in the bottom-right corner of the page
-3. Log in to the app and confirm the Messenger bubble still appears
-4. Click the Messenger bubble and send a test message
-5. Go to the [Intercom Inbox](https://app.intercom.com/a/inbox/_/inbox/) and confirm the test conversation appears, attributed to the correct user name and identity
-
-## Installation Checklist
-
-After generating the installation code, verify with the user:
-
-1. The backend JWT endpoint exists and is authentication-protected
-2. The Identity Verification Secret is stored as an environment variable (not hardcoded)
-3. JWTs include `user_id` and have a short expiration (`exp`)
-4. The frontend passes `intercom_user_jwt` when booting the Messenger
-5. The Workspace ID is correct (and `api_base` is set if the workspace is in EU or Australia)
-6. The logout flow calls `Intercom('shutdown')`
-7. SPA route changes trigger `Intercom('update')`
+**Manual verification** (instruct the user): Open the app in a browser, confirm the Messenger bubble appears, log in, click the bubble, send a test message, then check the [Intercom Inbox](https://app.intercom.com/a/inbox/_/inbox/) to confirm the conversation appears attributed to the correct user.
 
 ## Post-Installation: Enforce JWT Authentication
 
