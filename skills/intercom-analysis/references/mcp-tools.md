@@ -2,6 +2,23 @@
 
 This document provides detailed parameter and query DSL reference for each MCP tool available through the Intercom MCP server.
 
+## Tool Selection Guide
+
+Use this table to pick the right tool for the task:
+
+| Goal | Tool | When to Use |
+|------|------|-------------|
+| Find conversations by criteria | `search` or `search_conversations` | Use `search_conversations` when you need conversation-specific filters (state, source type, assignee). Use `search` for simpler keyword queries or when searching across object types. |
+| Find contacts by criteria | `search` or `search_contacts` | Use `search_contacts` when filtering by contact-specific fields (email, name, location, custom attributes). Use `search` for simpler queries. |
+| Find companies | `search` | The only search tool that supports company queries. Set `object_type` to `company`. |
+| Get full conversation thread | `get_conversation` | After finding a conversation via search, use this to read the complete message history including notes and state changes. |
+| Get full contact profile | `get_contact` | After finding a contact via search, use this to see all attributes, tags, segments, and associated companies. |
+| Get any object by ID | `fetch` | When you already have an ID (conversation, contact, or company) and need the full object. Works across all object types. |
+
+**Typical workflow:** Start with a search tool to find relevant items, then use a get/fetch tool for full details. Don't try to answer complex questions from search results alone.
+
+---
+
 ## `search` — General-Purpose Search
 
 The `search` tool queries across multiple Intercom object types using a structured query DSL.
@@ -122,6 +139,24 @@ Search specifically for conversations with conversation-oriented filters.
 | `tags.tag.id` | string | Filter by tag ID |
 | `custom_attributes.<key>` | varies | Custom conversation attributes |
 
+### Search Strategies for Conversations
+
+When searching for conversations, consider these approaches:
+
+**Filter by State** — Search by state to understand workload or find unresolved issues:
+- `open` — Currently active conversations requiring attention
+- `closed` — Resolved conversations, useful for pattern analysis
+- `snoozed` — Temporarily deferred conversations
+
+**Filter by Content** — Search conversation content by keywords to find discussions about specific topics, features, or error messages. Combine keyword searches with state filters to narrow results (e.g., find open conversations mentioning "billing error").
+
+**Filter by Source Type** — Conversations originate from different channels:
+- `email` — Email-based conversations
+- `chat` — Live chat / Messenger conversations
+- `api` — Programmatically created conversations
+
+**Pagination** — Search results return a page at a time. Use the `starting_after` cursor from the response to fetch subsequent pages. Always check if there are more results before summarizing — a single page may not tell the full story.
+
 ---
 
 ## `get_conversation` — Fetch Single Conversation
@@ -179,6 +214,18 @@ Search specifically for contacts with contact-oriented filters.
 | `tag.id` | string | Filter by tag ID |
 | `segment.id` | string | Filter by segment ID |
 | `custom_attributes.<key>` | varies | Custom contact attributes |
+
+### Contact Lookup Strategies
+
+When looking up contacts, use the most specific identifier available:
+
+**By Email** — The most reliable lookup method. Search for contacts using their exact email address when investigating a specific person's conversations or account status.
+
+**By Domain** — Search contacts by their email domain (using the `~` contains operator on the `email` field) to find all people from a specific company. Useful for investigating company-wide issues or understanding an organization's support history.
+
+**By Custom Attributes** — Contacts may have custom attributes set by the customer's Intercom workspace (e.g., plan type, account ID, role). Use these when the user references workspace-specific identifiers.
+
+**By Location** — Search contacts by city, country, or region when investigating geographically scoped issues (e.g., "are customers in Europe seeing more latency?").
 
 ---
 

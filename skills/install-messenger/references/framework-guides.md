@@ -135,14 +135,12 @@ export function IntercomMessenger({ appId, isAuthenticated }: IntercomMessengerP
         .then(res => res.json())
         .then(({ token }) => {
           window.Intercom('boot', {
-            api_base: 'https://api-iam.intercom.io',
             app_id: appId,
             intercom_user_jwt: token,
           });
         });
     } else {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: appId,
       });
     }
@@ -210,14 +208,12 @@ export default function App({ Component, pageProps }) {
         .then(res => res.json())
         .then(({ token }) => {
           window.Intercom('boot', {
-            api_base: 'https://api-iam.intercom.io',
             app_id: 'YOUR_WORKSPACE_ID',
             intercom_user_jwt: token,
           });
         });
     } else {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: 'YOUR_WORKSPACE_ID',
       });
     }
@@ -285,14 +281,12 @@ export function useIntercom(appId: string, isAuthenticated: () => boolean) {
         .then(res => res.json())
         .then(({ token }) => {
           window.Intercom('boot', {
-            api_base: 'https://api-iam.intercom.io',
             app_id: appId,
             intercom_user_jwt: token,
           });
         });
     } else {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: appId,
       });
     }
@@ -352,6 +346,181 @@ router.afterEach(() => {
 
 ---
 
+## Angular
+
+Angular uses the same `@intercom/messenger-js-sdk` NPM package. Create a service to handle JWT fetching, Messenger lifecycle, and route change updates.
+
+### Installation
+
+```bash
+npm install @intercom/messenger-js-sdk
+# or
+yarn add @intercom/messenger-js-sdk
+```
+
+### Intercom Service
+
+```typescript
+// services/intercom.service.ts
+import { Injectable, OnDestroy } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
+import Intercom, { shutdown, update } from '@intercom/messenger-js-sdk';
+import { filter, Subscription } from 'rxjs';
+
+@Injectable({ providedIn: 'root' })
+export class IntercomService implements OnDestroy {
+  private routerSub: Subscription;
+
+  constructor(private router: Router) {
+    this.routerSub = this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => update());
+  }
+
+  boot(appId: string, isAuthenticated: boolean) {
+    if (isAuthenticated) {
+      fetch('/api/intercom-jwt', { credentials: 'include' })
+        .then(res => res.json())
+        .then(({ token }) => {
+          Intercom({
+            app_id: appId,
+            intercom_user_jwt: token,
+          });
+        });
+    } else {
+      Intercom({ app_id: appId });
+    }
+  }
+
+  shutdown() {
+    shutdown();
+  }
+
+  ngOnDestroy() {
+    this.routerSub.unsubscribe();
+  }
+}
+```
+
+### App Component
+
+```typescript
+// app.component.ts
+import { Component, OnInit } from '@angular/core';
+import { IntercomService } from './services/intercom.service';
+import { AuthService } from './services/auth.service';
+
+@Component({ selector: 'app-root', template: '<router-outlet />' })
+export class AppComponent implements OnInit {
+  constructor(private intercom: IntercomService, private auth: AuthService) {}
+
+  ngOnInit() {
+    this.intercom.boot('YOUR_WORKSPACE_ID', this.auth.isAuthenticated());
+  }
+}
+```
+
+### Shutdown on Logout
+
+```typescript
+import { IntercomService } from './services/intercom.service';
+
+export class LogoutComponent {
+  constructor(private intercom: IntercomService) {}
+
+  logout() {
+    this.intercom.shutdown(); // Clear Intercom session first
+    // ... your logout logic
+  }
+}
+```
+
+---
+
+## Ember.js
+
+Ember also uses the `@intercom/messenger-js-sdk` NPM package. Use an instance initializer to subscribe to route changes and a service to manage the Messenger lifecycle.
+
+### Installation
+
+```bash
+npm install @intercom/messenger-js-sdk
+# or
+yarn add @intercom/messenger-js-sdk
+```
+
+### Instance Initializer
+
+Register a route change listener that calls `update()` on every transition:
+
+```javascript
+// app/instance-initializers/intercom.js
+import { update } from '@intercom/messenger-js-sdk';
+
+export function initialize(appInstance) {
+  const router = appInstance.lookup('service:router');
+  router.on('routeDidChange', () => update());
+}
+
+export default { initialize };
+```
+
+### Intercom Service
+
+```javascript
+// app/services/intercom.js
+import Service from '@ember/service';
+import Intercom, { shutdown } from '@intercom/messenger-js-sdk';
+
+export default class IntercomService extends Service {
+  boot(appId, isAuthenticated) {
+    if (isAuthenticated) {
+      fetch('/api/intercom-jwt', { credentials: 'include' })
+        .then(res => res.json())
+        .then(({ token }) => {
+          Intercom({
+            app_id: appId,
+            intercom_user_jwt: token,
+          });
+        });
+    } else {
+      Intercom({ app_id: appId });
+    }
+  }
+
+  shutdown() {
+    shutdown();
+  }
+}
+```
+
+### Boot in Application Route
+
+```javascript
+// app/routes/application.js
+import Route from '@ember/routing/route';
+import { inject as service } from '@ember/service';
+
+export default class ApplicationRoute extends Route {
+  @service intercom;
+  @service session; // Your auth service
+
+  afterModel() {
+    this.intercom.boot('YOUR_WORKSPACE_ID', this.session.isAuthenticated);
+  }
+}
+```
+
+### Shutdown on Logout
+
+```javascript
+// In your logout action or route
+this.intercom.shutdown(); // Clear Intercom session first
+// ... your logout logic (e.g., this.session.invalidate())
+```
+
+---
+
 ## Single-Page App Considerations
 
 Regardless of framework, all SPAs share these concerns:
@@ -371,7 +540,6 @@ fetch('/api/intercom-jwt', { credentials: 'include' })
   .then(res => res.json())
   .then(({ token }) => {
     Intercom('boot', {
-      api_base: 'https://api-iam.intercom.io',
       app_id: 'YOUR_WORKSPACE_ID',
       intercom_user_jwt: token,
     });

@@ -1,10 +1,13 @@
 ---
 name: install-messenger
+license: MIT
 description: >
-  This skill should be used when the user asks to "install Intercom",
-  "add the Intercom Messenger", "set up Intercom chat widget",
-  "add customer chat to my website", or "integrate Intercom" into
-  their website or application.
+  Install the Intercom Messenger on a website or web application with
+  secure JWT-based identity verification. Generates backend and frontend
+  code for React, Next.js, Vue.js, Angular, Ember, and plain JavaScript.
+  Supports Node.js, Python (Flask/Django), PHP, and Ruby backends. Use when
+  the user asks to "install Intercom", "add the Intercom Messenger", "set up
+  Intercom chat widget", "add customer chat to my website", or "integrate Intercom".
 disable-model-invocation: true
 argument-hint: "[framework]"
 ---
@@ -26,6 +29,8 @@ Gather these from the user before proceeding:
 2. **Identity Verification Secret** (also called Messenger API Secret) — Found in Intercom at **Settings > Channels > Messenger > Security**. This is the HMAC secret used to sign JWTs. It must never appear in frontend code.
 
 Ask the user for both values. Do not proceed without the Workspace ID. If they don't have the Identity Verification Secret yet, direct them to **Settings > Channels > Messenger > Security** in Intercom to enable it.
+
+In all generated code, replace `YOUR_WORKSPACE_ID` with the user's actual Workspace ID. Do not leave placeholders — substitute the real values they provided.
 
 ## Installation Overview
 
@@ -99,6 +104,59 @@ def intercom_jwt():
     return {'token': token}
 ```
 
+### Python / Django Example
+
+```python
+# views.py
+import jwt
+import time
+import os
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
+INTERCOM_SECRET = os.environ['INTERCOM_IDENTITY_SECRET']
+
+@login_required
+def intercom_jwt(request):
+    token = jwt.encode(
+        {
+            'user_id': str(request.user.id),
+            'email': request.user.email,
+            'name': request.user.get_full_name(),
+            'exp': int(time.time()) + 7200,  # 2 hours
+        },
+        INTERCOM_SECRET,
+        algorithm='HS256',
+    )
+    return JsonResponse({'token': token})
+```
+
+Add the URL pattern: `path('api/intercom-jwt', views.intercom_jwt)` in your `urls.py`.
+
+### PHP Example
+
+Requires the `firebase/php-jwt` package: `composer require firebase/php-jwt`
+
+```php
+<?php
+// api/intercom-jwt.php
+require_once 'vendor/autoload.php';
+use Firebase\JWT\JWT;
+
+$secret = getenv('INTERCOM_IDENTITY_SECRET');
+$user = get_authenticated_user(); // Your auth logic
+
+$token = JWT::encode([
+    'user_id' => (string) $user->id,
+    'email' => $user->email,
+    'name' => $user->name,
+    'exp' => time() + 7200, // 2 hours
+], $secret, 'HS256');
+
+header('Content-Type: application/json');
+echo json_encode(['token' => $token]);
+```
+
 ### Ruby / Rails Example
 
 ```ruby
@@ -123,6 +181,8 @@ class Api::IntercomController < ApplicationController
 end
 ```
 
+**Alternative: `intercom-rails` gem** — For simpler setups, Intercom provides a Rails gem that auto-injects the Messenger. Install with `gem "intercom-rails"`, run `rails generate intercom:config YOUR_WORKSPACE_ID`, and configure the secret in the generated initializer. See the [Intercom install page](https://app.intercom.com/a/apps/_/settings/channels/messenger/install) for details. The JWT approach above gives you more control and works with any Ruby backend, not just Rails.
+
 Adapt the example to the user's backend language and framework. The key requirements are:
 - The endpoint is authenticated (only the logged-in user can get their own JWT)
 - The secret comes from an environment variable, never hardcoded
@@ -143,7 +203,6 @@ Add before the closing `</body>` tag:
     .then(res => res.json())
     .then(({ token }) => {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: 'YOUR_WORKSPACE_ID',
         intercom_user_jwt: token,
       });
@@ -160,7 +219,6 @@ For pages where the visitor is not logged in (marketing pages, docs), boot witho
 
 ```javascript
 window.Intercom('boot', {
-  api_base: 'https://api-iam.intercom.io',
   app_id: 'YOUR_WORKSPACE_ID',
 });
 ```
@@ -169,21 +227,21 @@ No JWT is needed for anonymous visitors. Intercom tracks them as leads.
 
 ## Framework-Specific Installation
 
-If the user is using React, Next.js, Vue.js, or another SPA framework, refer to `references/framework-guides.md` for JWT-integrated installation code. Ask the user what framework they are using if it is not obvious from their codebase.
+If the user is using React, Next.js, Vue.js, Angular, Ember, or another SPA framework, refer to `references/framework-guides.md` for JWT-integrated installation code. Ask the user what framework they are using if it is not obvious from their codebase.
 
 After reading the framework guide, adapt the code to the user's specific project structure — find their main layout component, app entry point, or equivalent, and integrate the Messenger there.
 
 ## Regional Data Centers
 
-Intercom operates in multiple regions. The `api_base` URL must match the user's data residency region:
+Most Intercom workspaces are in the US region, which is the default — no `api_base` is needed. Only add `api_base` if the user's workspace is hosted in EU or Australia:
 
-| Region | `api_base` URL |
-|--------|----------------|
-| US (default) | `https://api-iam.intercom.io` |
-| EU (Ireland) | `https://api-iam.eu.intercom.io` |
-| Australia | `https://api-iam.au.intercom.io` |
+| Region | `api_base` | Required? |
+|--------|------------|-----------|
+| US (default) | *(not needed)* | No |
+| EU (Ireland) | `https://api-iam.eu.intercom.io` | Yes |
+| Australia | `https://api-iam.au.intercom.io` | Yes |
 
-Ask the user which region their workspace is hosted in if they mention EU or Australian hosting, GDPR compliance, or data residency requirements. Default to US if unspecified.
+If the user mentions EU or Australian hosting, GDPR compliance, or data residency requirements, add the appropriate `api_base` to every `Intercom('boot', ...)` call. Otherwise, omit it.
 
 ## Security Best Practices
 
@@ -200,7 +258,6 @@ After shutdown, re-initialize for the next user or as anonymous:
 
 ```javascript
 Intercom('boot', {
-  api_base: 'https://api-iam.intercom.io',
   app_id: 'YOUR_WORKSPACE_ID',
 });
 ```
@@ -209,7 +266,7 @@ Always include the shutdown call. Skipping it leaks conversation data between us
 
 ### Protect Identifying Attributes
 
-In Intercom (**Settings > Messenger > Security**), mark identifying attributes (email, phone, account IDs) as **protected**. This prevents client-side code from spoofing these values — only the server-signed JWT can set them.
+In Intercom (**Settings > Channels > Messenger > Security**), mark identifying attributes (email, phone, account IDs) as **protected**. This prevents client-side code from spoofing these values — only the server-signed JWT can set them.
 
 ### Token Expiration
 
@@ -223,13 +280,38 @@ function refreshIntercomToken() {
     .then(res => res.json())
     .then(({ token }) => {
       window.Intercom('boot', {
-        api_base: 'https://api-iam.intercom.io',
         app_id: 'YOUR_WORKSPACE_ID',
         intercom_user_jwt: token,
       });
     });
 }
 ```
+
+## Troubleshooting
+
+### JWT Library Not Installed
+Error: `Cannot find module 'jsonwebtoken'` (Node.js), `ModuleNotFoundError: No module named 'jwt'` (Python), or `LoadError: cannot load such file -- jwt` (Ruby)
+Solution: Install the JWT library for the user's language — `npm install jsonwebtoken`, `pip install PyJWT`, or `gem install jwt`.
+
+### Wrong Identity Verification Secret
+Symptom: Messenger loads but shows "Identity verification failed" or user attributes don't appear.
+Cause: The secret used to sign JWTs doesn't match the workspace's Identity Verification Secret.
+Solution: Verify the secret in Intercom at **Settings > Channels > Messenger > Security**. Ensure the environment variable holds the correct value for this workspace.
+
+### Plan Doesn't Support Identity Verification
+Symptom: Identity Verification Secret not available in Intercom settings.
+Cause: Identity verification is a paid feature not available on all Intercom plans.
+Solution: Check the workspace's Intercom plan. If identity verification is unavailable, the user may need to upgrade or use the insecure installation (with explicit acknowledgment of the security trade-off).
+
+### JWT `exp` in the Past
+Symptom: Messenger rejects the token immediately after creation.
+Cause: Server clock is wrong or `exp` calculation is incorrect.
+Solution: Check the server's system time (`date` command). Ensure NTP is configured. Verify the `exp` value is a future Unix timestamp in seconds (not milliseconds).
+
+### CORS Errors on JWT Endpoint
+Symptom: Browser console shows `Access-Control-Allow-Origin` errors when fetching the JWT.
+Cause: The backend JWT endpoint doesn't allow requests from the frontend's origin.
+Solution: Configure CORS on the JWT endpoint to allow the frontend origin. For Express: `cors({ origin: 'https://your-app.com', credentials: true })`. For other frameworks, add the appropriate CORS headers.
 
 ## Single-Page App (SPA) Route Changes
 
@@ -245,8 +327,21 @@ Where to place this depends on the routing library:
 - **React Router** — In a `useEffect` hook that watches `location` changes
 - **Next.js App Router** — In a layout component using `usePathname()`
 - **Vue Router** — In a `router.afterEach()` navigation guard
+- **Angular Router** — In a service subscribing to `NavigationEnd` events
+- **Ember Router** — In an instance initializer listening to `routeDidChange`
 
 Without this, the Messenger may show stale content or miss page-specific triggers.
+
+## Third-Party Integrations
+
+Intercom also supports installation via these platforms. These don't require writing code — configure them through each platform's UI:
+
+- **WordPress** — Install the official Intercom plugin from the WordPress plugin directory
+- **Shopify** — Install via the Shopify App Store
+- **Google Tag Manager** — Add the Intercom tag using the GTM template gallery
+- **Segment** — Enable the Intercom destination in your Segment workspace
+
+For setup instructions, direct users to the install page in Intercom: **Settings > Channels > Messenger > Install**.
 
 ## Installation Checklist
 
@@ -256,7 +351,7 @@ After generating the installation code, verify with the user:
 2. The Identity Verification Secret is stored as an environment variable (not hardcoded)
 3. JWTs include `user_id` and have a short expiration (`exp`)
 4. The frontend passes `intercom_user_jwt` when booting the Messenger
-5. The Workspace ID and `api_base` are correct for their region
+5. The Workspace ID is correct (and `api_base` is set if the workspace is in EU or Australia)
 6. The logout flow calls `Intercom('shutdown')`
 7. SPA route changes trigger `Intercom('update')`
 8. Identifying attributes are marked as protected in Intercom settings
@@ -268,7 +363,6 @@ If the user explicitly asks for an "insecure installation" (no JWT, no identity 
 ```html
 <script>
   window.intercomSettings = {
-    api_base: "https://api-iam.intercom.io",
     app_id: "YOUR_WORKSPACE_ID",
     name: "Jane Doe",
     email: "jane@example.com",
