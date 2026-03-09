@@ -347,9 +347,9 @@ For setup instructions, direct users to the [Messenger install page](https://app
 
 After generating the code, verify the installation before considering the task complete. If you have browser automation tools available (e.g., Playwright MCP, playwright-cli, or similar), use them to programmatically verify. Otherwise, tell the user how to verify manually.
 
-### Automated Verification
+### Automated Verification with Browser Automation
 
-If browser automation is available, run the app and verify:
+If browser automation tools are available (e.g., Playwright MCP, playwright-cli, or similar), run the app and verify:
 
 1. **Navigate to a public page** and check:
    - `typeof window.Intercom === 'function'` — the Intercom stub is initialized
@@ -362,15 +362,25 @@ If browser automation is available, run the app and verify:
 
 3. **Note:** The Intercom widget bubble (iframe) loads from an external CDN (`widget.intercom.io`). In headless or sandboxed browser environments, the CDN may be unreachable — the widget script will fail to load and no iframe will appear. This is a network restriction of the test environment, not a code problem. If the stub function, script tag, JWT endpoint, and boot calls all check out, the installation is correct.
 
+### Automated Verification with Intercom MCP
+
+If the Intercom MCP tools are available (e.g., `search_contacts`), verify that a logged-in user's identity was created in Intercom after they loaded the Messenger:
+
+1. Have the user log in to the app (or use a test account) and load a page with the Messenger
+2. Use `search_contacts` to search for the user by name or `external_id` matching the `user_id` from the JWT
+3. Confirm the contact exists with `role: "user"` (not `"lead"`) and the correct `external_id` — this proves the JWT was accepted and Intercom created a verified user record
+
+This is the strongest verification available — it confirms the full chain from JWT signing to Intercom identity creation.
+
 ### Manual Verification
 
-If automated verification is not possible, instruct the user to verify by:
+Instruct the user to verify by:
 
-1. Starting the app and opening it in a real browser
-2. Opening the browser console and confirming `typeof window.Intercom === 'function'`
-3. Checking that the Intercom Messenger bubble appears in the bottom-right corner
-4. Logging in and verifying the bubble still appears (now with identity)
-5. Checking the browser console for any errors related to Intercom or the JWT endpoint
+1. Start the app and open it in a browser
+2. Confirm the Intercom Messenger bubble appears in the bottom-right corner of the page
+3. Log in to the app and confirm the Messenger bubble still appears
+4. Click the Messenger bubble and send a test message
+5. Go to the [Intercom Inbox](https://app.intercom.com/a/inbox/_/inbox/) and confirm the test conversation appears, attributed to the correct user name and identity
 
 ## Installation Checklist
 
