@@ -8,6 +8,12 @@ Connect your Intercom workspace to Claude Code. Search conversations, analyze cu
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI installed
 - Your Intercom workspace must be US-hosted (EU and AU support coming soon)
 
+## Installation
+
+```
+/plugin install intercom
+```
+
 ## Available Skills
 
 | Skill | Invocation | Description |
