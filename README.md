@@ -20,6 +20,7 @@ Connect your Intercom workspace to Claude Code. Search conversations, analyze cu
 |-------|-----------|-------------|
 | **Intercom Analysis** | Auto-triggered | Analyze conversations, find support patterns, investigate customer issues, and look up contacts. Triggers automatically when you ask about your Intercom data. |
 | **Install Messenger** | `/intercom:install-messenger [framework]` | Install the Intercom Messenger with secure JWT-based identity verification. Supports React, Next.js, Vue.js, and plain JavaScript. |
+| **Install CLI** | `/intercom:install-cli` | Install and authenticate the [`@intercom/cli`](https://www.npmjs.com/package/@intercom/cli) command-line tool for shell access, scripting, and workspace provisioning. |
 | **Customer 360** | `/intercom:customer-360 [email or company]` | Build a comprehensive customer profile with conversation history, account context, and interaction timeline. |
 
 ## Usage Examples
@@ -42,6 +43,11 @@ Look up all conversations from jane@example.com and summarize her issues
 **Install the Messenger:**
 ```
 /intercom:install-messenger react
+```
+
+**Install the CLI:**
+```
+/intercom:install-cli
 ```
 
 **Get conversation details:**
