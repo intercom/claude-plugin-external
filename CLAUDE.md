@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Intercom plugin for Claude Code — a skill-based integration (not compiled code). Skills are pure Markdown files that Claude reads at runtime to interact with Intercom workspaces via a remote MCP server.
+Intercom plugin for Claude Code and Google Antigravity — a skill-based integration (not compiled code). Skills are pure Markdown files the agent reads at runtime to interact with Intercom workspaces via a remote MCP server. Both platforms load the same `skills/` directory.
 
 ## Architecture
 
@@ -15,6 +15,9 @@ User → Claude Code CLI → Skill (SKILL.md) → MCP Server (https://mcp.interc
 - **No build step, no dependencies, no tests.** The plugin is entirely declarative.
 - `.mcp.json` routes the `intercom` namespace to the remote HTTP-based MCP server.
 - `.claude-plugin/plugin.json` is the plugin manifest for Claude Code's plugin registry.
+- `.antigravity-plugin/plugin.json` is the Antigravity Plugin Marketplace manifest. Antigravity reads MCP servers from `mcp_config.json` and the card logo from `assets/logo.svg`, both at the repo root.
+- Keep `version` in both manifests in step, and bump it on every published change so installed clients pick up the update.
+- The company is Fin and Intercom is its helpdesk product: use Fin for the publisher (`author`) and Intercom for the product and its features.
 - `.claude/settings.local.json` manages local permissions (currently allows WebFetch from raw.githubusercontent.com).
 
 ## Skills

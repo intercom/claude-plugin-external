@@ -1,0 +1,21 @@
+{
+  "name": "intercom",
+  "displayName": "Intercom",
+  "version": "0.2.0",
+  "description": "Search Intercom conversations, contacts, and companies, spot support trends, and install the Intercom Messenger with secure identity verification.",
+  "logo": "assets/logo.svg",
+  "suggestedPrompts": [
+    "Show me the most common topics in open Intercom conversations this week",
+    "Summarize every Intercom conversation from jane@example.com",
+    "Install the Intercom Messenger in this app with identity verification"
+  ],
+  "category": ["Productivity", "Developer Tools"],
+  "keywords": ["intercom", "fin", "customer-support", "helpdesk", "conversations", "contacts", "messenger", "crm"],
+  "author": {
+    "name": "Fin",
+    "url": "https://fin.ai"
+  },
+  "homepage": "https://developers.intercom.com",
+  "repository": "https://github.com/intercom/claude-plugin-external",
+  "license": "MIT"
+}

@@ -1,18 +1,26 @@
-# Intercom Plugin for Claude Code
+# Intercom Plugin for Claude Code and Google Antigravity
 
-Connect your Intercom workspace to Claude Code. Search conversations, analyze customer support patterns, look up contacts and companies, and install the Intercom Messenger — all from your terminal.
+Connect your Intercom workspace to Claude Code or Google Antigravity. Search conversations, analyze customer support patterns, look up contacts and companies, and install the Intercom Messenger.
 
 ## Prerequisites
 
 - An [Intercom](https://www.intercom.com) workspace
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI installed
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) or [Google Antigravity](https://antigravity.google) installed
 - Your Intercom workspace must be US-hosted (EU and AU support coming soon)
 
 ## Installation
 
+### Claude Code
+
 ```
 /plugin install intercom
 ```
+
+### Google Antigravity
+
+Open **Customizations → Plugins** and install Intercom from **Discover**, or choose **+ Install from URL** and enter `https://github.com/intercom/claude-plugin-external`.
+
+Connecting to the Intercom MCP server requires signing in to your Intercom workspace through OAuth. In Antigravity, explicit skills are invoked without the `intercom:` prefix, for example `/customer-360 jane@example.com`.
 
 ## Available Skills
 
@@ -67,6 +75,7 @@ Pull up conversation #12345 and show me the full thread
 - [Intercom API Reference](https://developers.intercom.com/docs/references/rest-api/api.intercom.io/conversations/conversation/)
 - [Intercom Messenger Setup Guide](https://www.intercom.com/help/en/articles/170-install-intercom-on-your-website-or-web-app)
 - [Claude Code Documentation](https://docs.anthropic.com/en/docs/claude-code)
+- [Google Antigravity](https://antigravity.google)
 
 ## License
 
