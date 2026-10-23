@@ -9,7 +9,6 @@
     "Summarize every Intercom conversation from jane@example.com",
     "Install the Intercom Messenger in this app with identity verification"
   ],
-  "category": ["Productivity", "Developer Tools"],
   "keywords": ["intercom", "fin", "customer-support", "helpdesk", "conversations", "contacts", "messenger", "crm"],
   "author": {
     "name": "Fin",

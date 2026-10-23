@@ -9,5 +9,11 @@
   "homepage": "https://developers.intercom.com",
   "repository": "https://github.com/intercom/claude-plugin-external",
   "license": "MIT",
+  "mcpServers": {
+    "intercom": {
+      "type": "http",
+      "url": "https://mcp.intercom.com/mcp"
+    }
+  },
   "keywords": ["intercom", "customer-support", "conversations", "contacts", "messenger", "crm", "api"]
 }

@@ -13,7 +13,7 @@ User → Claude Code CLI → Skill (SKILL.md) → MCP Server (https://mcp.interc
 ```
 
 - **No build step, no dependencies, no tests.** The plugin is entirely declarative.
-- `.mcp.json` routes the `intercom` namespace to the remote HTTP-based MCP server.
+- `.claude-plugin/plugin.json` declares the `intercom` MCP server inline. Don't add a `.mcp.json`: Antigravity never loads it, and `agy plugin validate --strict` fails on it.
 - `.claude-plugin/plugin.json` is the plugin manifest for Claude Code's plugin registry.
 - `.antigravity-plugin/plugin.json` is the Antigravity Plugin Marketplace manifest. Antigravity reads MCP servers from `mcp_config.json` and the card logo from `assets/logo.svg`, both at the repo root.
 - Keep `version` in both manifests in step, and bump it on every published change so installed clients pick up the update.
