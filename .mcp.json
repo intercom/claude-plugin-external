@@ -1,6 +1,0 @@
-{
-  "intercom": {
-    "type": "http",
-    "url": "https://mcp.intercom.com/mcp"
-  }
-}
