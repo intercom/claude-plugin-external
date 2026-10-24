@@ -18,7 +18,7 @@ Connect your Intercom workspace to Claude Code or Google Antigravity. Search con
 
 ### Google Antigravity
 
-Open **Customizations → Plugins** and install Intercom from **Discover**, or choose **+ Install from URL** and enter `https://github.com/intercom/claude-plugin-external`.
+Open **Customizations → Plugins** and install Intercom from **Discover**, or choose **+ Install from URL** and enter `https://github.com/intercom/intercom-plugin`.
 
 Connecting to the Intercom MCP server requires signing in to your Intercom workspace through OAuth. In Antigravity, explicit skills are invoked without the `intercom:` prefix, for example `/customer-360 jane@example.com`.
 
